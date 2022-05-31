@@ -1,13 +1,25 @@
 import detectEthereumProvider from "@metamask/detect-provider"
 import { Strategy, ZkIdentity } from "@zk-kit/identity"
 import { generateMerkleProof, Semaphore } from "@zk-kit/protocols"
-import { providers } from "ethers"
+import { providers, Contract } from "ethers"
+import Greeter from "artifacts/contracts/Greeters.sol/Greeters.json"
 import Head from "next/head"
-import React from "react"
+import React, { useEffect } from "react"
 import styles from "../styles/Home.module.css"
 
 export default function Home() {
+    const GREETERS_CONTRACT_ADDR = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
     const [logs, setLogs] = React.useState("Connect your wallet and greet!")
+    const [greetings, setGreetings] = React.useState('');
+
+    useEffect(() => {
+        const provider = new providers.JsonRpcProvider("http://localhost:8545")
+        const greeterContract = new Contract(GREETERS_CONTRACT_ADDR, Greeter.abi, provider)
+        greeterContract.on("NewGreeting", (greeting) => {
+            const newGreetingEvent = Buffer.from(greeting.split('0x')[1], 'hex').toString().trim();
+            setGreetings(newGreetingEvent);
+        });
+    }, []);
 
     async function greet() {
         setLogs("Creating your Semaphore identity...")
@@ -73,6 +85,14 @@ export default function Home() {
                 <p className={styles.description}>A simple Next.js/Hardhat privacy application with Semaphore.</p>
 
                 <div className={styles.logs}>{logs}</div>
+
+
+                <div className="col-6 mb-4">
+                    <div className="input-group input-group-lg">
+                        <span className="input-group-text" id="inputGroup-sizing-lg">Greeting</span>
+                        <input type="text" className="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" value={greetings} readOnly/>
+                    </div>
+                </div>
 
                 <div onClick={() => greet()} className={styles.button}>
                     Greet
